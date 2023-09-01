@@ -25,20 +25,18 @@ ROBOTSTXT_OBEY = True
 
 SELENIUM_DRIVER_NAME = 'undetected'
 # SELENIUM_DRIVER_EXECUTABLE_PATH = Put path to your driver here if DRIVER_NAME not undetected
-SELENIUM_DRIVER_ARGUMENTS= ['--blink-settings=imagesEnabled=false'] 
-# For headless add '--headless'
+SELENIUM_DRIVER_ARGUMENTS= ['--blink-settings=imagesEnabled=false','--headless'] 
+
   
 DOWNLOADER_MIDDLEWARES = {
      "ApartamentRentScraper.middlewares.SeleniumMiddleware": 800
      }
 ITEM_PIPELINES = {
     "ApartamentRentScraper.pipelines.ApartamentScraperPipeline" : 300,
-    "ApartamentRentScraper.pipelines.MySQLPipeline" : 301,
+    # "ApartamentRentScraper.pipelines.MySQLPipeline" : 301,
 }
 
-MYSQL_TABLE_NAME = "apar"
 # MYSQL_URL = "mysql+pymysql://root:mysqlpss@localhost:3306/apartaments"
-MYSQL_URL = "mysql+pymysql://root:mysqlpss@localhost:3306/apartaments"
 
 
 
