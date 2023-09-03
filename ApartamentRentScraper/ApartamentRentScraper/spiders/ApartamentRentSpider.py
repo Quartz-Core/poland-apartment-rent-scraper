@@ -43,7 +43,7 @@ class ApartamentrentspiderSpider(scrapy.Spider):
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name, **kwargs)
-        self.page_limit = None
+        self.page_limit = 2
   
 
     name = "ApartamentRentSpider"
@@ -64,7 +64,7 @@ class ApartamentrentspiderSpider(scrapy.Spider):
         apartaments = response.css("a.css-1tiwk2i")
 
         if self.page_limit == None:
-            self.page_limit = max(response.xpath("//a[contains(@class,'eo9qioj1 css-5tvc2l edo3iif1')]/text()").getall())
+            self.page_limit = int(max(response.xpath("//a[contains(@class,'eo9qioj1 css-5tvc2l edo3iif1')]/text()").getall()))
 
         for apartament in apartaments:
             offer_url = apartament.css("a").attrib["href"]
@@ -76,7 +76,7 @@ class ApartamentrentspiderSpider(scrapy.Spider):
         pagenumber = int(pagenumber[1])
         if pagenumber < self.page_limit:
             pagenumber += 1
-            next_page_url = f"https://www.otodom.pl/pl/wyniki/wynajem/kawalerka/cala-polska?page={pagenumber}&by=LATEST&direction=ASC"
+            next_page_url =  re.sub(r"page=(\d+)",f"page={pagenumber}",response.url)
             yield SeleniumRequest(url=next_page_url,callback=self.parse,
                                   script="window.scrollTo(0, document.body.scrollHeight);")
 

@@ -11,9 +11,7 @@ import sqlalchemy
 import logging
 
 
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import mapped_column
-from sqlalchemy import Integer, String, Float, Boolean
+
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.exc import IntegrityError
 
@@ -67,48 +65,13 @@ class ApartamentScraperPipeline:
         )
 
 
-
-Base = declarative_base()
-class Apartament(Base):
-    __tablename__ = 'apartaments'
-    # id = mapped_column(Integer, primary_key=True)
-    monthly_rent = mapped_column(Integer)
-    area = mapped_column(Integer)
-    additional_fees = mapped_column(Integer)
-    number_of_rooms = mapped_column(String(length=10))
-    deposit = mapped_column(Integer)
-    floor = mapped_column(String(length=20))
-    building_type = mapped_column(String(length=200))
-    available_from = mapped_column(String(length=200))
-    balcony_garden_terrace = mapped_column(String(length=200))
-    remote_service = mapped_column(String(length=200))
-    finishing_quality = mapped_column(String(length=200))
-    advertiser_type = mapped_column(String(length=200))
-    open_to_students = mapped_column(String(length=200))
-    furnishing = mapped_column(String(length=200))
-    utilities = mapped_column(String(length=200))
-    heating = mapped_column(String(length=200))
-    security = mapped_column(String(length=200))
-    windows = mapped_column(String(length=200))
-    elevator = mapped_column(String(length=200))
-    parking_space = mapped_column(String(length=200))
-    year_built = mapped_column(String(length=20))
-    building_material = mapped_column(String(length=200))
-    additional_info = mapped_column(String(length=200))
-    location = mapped_column(String(length=200))
-    title = mapped_column(String(length=200))
-    url = mapped_column(String(length=500),primary_key=True)
-    city = mapped_column(String(length=200))
-    county = mapped_column(String(length=200))
-    voivodeship = mapped_column(String(length=200))
-    district = mapped_column(String(length=200))
-    neighbourhood = mapped_column(String(length=200))
-    street = mapped_column(String(length=200))
-
+from .schemas import Base,ApartamentCassandra,ApartamentMySQL
 
 class MySQLPipeline:
     def __init__(self, mysql_url):
-        self.mysql_url = mysql_url 
+        self.mysql_url = mysql_url
+        self.batch_size = 0
+        self.staged_items = []
     @classmethod
     def from_crawler(cls, crawler):
         return cls(
@@ -116,6 +79,9 @@ class MySQLPipeline:
         )
 
     def open_spider(self, spider):
+        ApartamentMySQL.__tablename__ = spider.settings.get('MYSQL_TABLE_NAME',"apartm")
+        self.THRESHOLD = spider.settings.get('BATCH_THRESHOLD',100)
+        
         self.engine = sqlalchemy.create_engine(self.mysql_url,echo=True)
         Session = sqlalchemy.orm.sessionmaker()
         Session.configure(bind=self.engine)
@@ -126,24 +92,76 @@ class MySQLPipeline:
         self.session = Session()
 
     def close_spider(self, spider):
+        if self.batch_size > 0:
+            self.mysql_commit()
         self.session.close()
 
     def process_item(self,item,spider):
         apartament = ItemAdapter(item).asdict()
-        # logging.debug(f"{f'{tuple(zip(apartament.items(),[type(x) for x in list(apartament.values())]))}'}")
-        newApartament = Apartament(**apartament)
+        newApartament = ApartamentMySQL(**apartament)
+        self.session.add(newApartament)
+        self.staged_items.append(newApartament)  # Add the item to the list in case of failed batch commit. 
+        self.batch_size += 1
 
-        try:
-            self.session.add(newApartament)
-            self.session.commit()
-        except IntegrityError as e:
-            self.session.rollback()
-            error_repr = repr(e)
-            if "Duplicate entry" in error_repr:
-                logging.info("Duplicate entry detected.")
-            else:
-                logging.error(error_repr)
-
-
+        if self.batch_size >= self.THRESHOLD:
+            self.mysql_commit()
         return item
     
+    
+    def mysql_commit(self):
+        try:
+            self.session.commit()
+            self.batch_size = 0
+            self.staged_items.clear()  # Clear the list since items were successfully committed
+        except IntegrityError as e:
+            self.session.rollback()
+            logging.debug(f"Batch insert failed: {repr(e)}. Reverting to individual inserts.")
+            for singleApartament in self.staged_items:
+                try:
+                    self.session.add(singleApartament)
+                    self.session.commit()
+                    logging.info("Batch commit sucessful")
+                except IntegrityError as sub_e:
+                    self.session.rollback()
+                    if "Duplicate entry" in repr(sub_e):
+                        logging.info("Duplicate Entry.")
+                    else:
+                        logging.error(f"Failed to insert item: {repr(sub_e)}")
+            self.staged_items.clear()  # Clear the list after processing
+            self.batch_size = 0
+                
+
+from cassandra.cluster import Cluster
+from cassandra.cqlengine import connection
+from cassandra.cqlengine.management import sync_table
+from itemadapter import ItemAdapter
+from cassandra import DriverException
+
+class CassandraPipeline:
+    def __init__(self, host, port, keyspace):
+        self.host = host
+        self.port = port
+        self.keyspace = keyspace
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(
+            host=crawler.settings.get("CASSANDRA_HOST"),
+            port=crawler.settings.get("CASSANDRA_PORT"),
+            keyspace=crawler.settings.get("CASSANDRA_KEYSPACE")
+        )
+
+    def open_spider(self, spider):
+        # Connect to the Cassandra cluster
+        self.cluster = Cluster([self.host], port=self.port)
+        self.session = self.cluster.connect(self.keyspace)
+        connection.set_session(self.session)
+        sync_table(ApartamentCassandra)  # Ensure the table exists
+
+    def process_item(self, item, spider):
+        item_dict = ItemAdapter(item).asdict()
+        ApartamentCassandra.create(**item_dict)
+        return item
+
+    def close_spider(self, spider):
+        self.cluster.shutdown()
