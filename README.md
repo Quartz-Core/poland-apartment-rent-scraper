@@ -1,12 +1,6 @@
-Apartment Rental Scraper
-Scrape and store apartment rental listings from www.otodom.pl into MySQL and Cassandra databases.
+## Apartment Rental Scraper
 
-Table of Contents
-Features
-Installation
-Usage
-Contribute
-License
+Scrape and store apartment rental listings from www.otodom.pl into MySQL and Cassandra databases.
 
 ## Features
 
@@ -29,7 +23,8 @@ License
    If you want to additionally save data to csv file. 
    
 
-**Activating database pipelines**
+**Activating database pipelines:**
+
 Uncomment:
 ```
 ITEM_PIPELINES = {
@@ -37,4 +32,9 @@ ITEM_PIPELINES = {
     # "ApartamentRentScraper.pipelines.CassandraPipeline" : 302,
 }
 ```
+**Configuration** 
+
+Filters and start_ulr:
+IF you want to scrape only specific locations, or range prices. Replace url in start_urls with one that has applied filters. (Use the website search filter to get the url)
+The scraper as of now is only able to scrape from mieszkanie or kawalerka listing sections.
  
