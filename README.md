@@ -32,9 +32,11 @@ ITEM_PIPELINES = {
     # "ApartamentRentScraper.pipelines.CassandraPipeline" : 302,
 }
 ```
+And give the necessary values to connect your database.
+
 **Configuration** 
 
 Filters and start_ulr:
-IF you want to scrape only specific locations, or range prices. Replace url in start_urls with one that has applied filters. (Use the website search filter to get the url)
+If you want to scrape only specific locations or range prices. Replace url in start_urls with one that has applied filters. (Use the website search filter to get the url)
 The scraper as of now is only able to scrape from mieszkanie or kawalerka listing sections.
  
