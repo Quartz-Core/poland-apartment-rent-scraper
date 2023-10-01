@@ -19,13 +19,14 @@ from sqlalchemy.exc import IntegrityError
 class ApartamentScraperPipeline:
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
-        # Remowing all non-digit characters and converting to integers
         
+        # Removing characters from numerical fields      
         numerical  = ["monthly_rent","deposit","additional_fees","area"]
         for field in numerical:
             if adapter[field]:
-                adapter[field] = int(re.sub(r"\D+","",adapter[field]))
+                adapter[field] = int(re.sub(r"[^\d.,]+|[.,].+","",adapter[field].replace(" ","")))
         
+        # The adress comes in two patterns we can use it to categorize it's components.
         adreses = adapter["location"].split(", ")
         adreses.reverse()
         adapter["voivodeship"] = adreses[0]
@@ -39,6 +40,7 @@ class ApartamentScraperPipeline:
                     elif i == 3:
                         adapter["neighbourhood"] = adres
                 else:
+                    
                     adapter["street"] = adres
 
         else:
@@ -68,18 +70,25 @@ class ApartamentScraperPipeline:
 from .schemas import Base,ApartamentCassandra,ApartamentMySQL
 
 class MySQLPipeline:
+    """
+    Pipeline for storing scraped apartment items in a MySQL database.
+    
+    This pipeline allows for batch inserts, and handles integrity errors by attempting individual inserts
+    for items that failed during batch insert.
+    """
+    
     def __init__(self, mysql_url):
         self.mysql_url = mysql_url
         self.batch_size = 0
         self.staged_items = []
     @classmethod
+    
     def from_crawler(cls, crawler):
         return cls(
             mysql_url=crawler.settings.get("MYSQL_URL"),
         )
 
     def open_spider(self, spider):
-        ApartamentMySQL.__tablename__ = spider.settings.get('MYSQL_TABLE_NAME',"apartm")
         self.THRESHOLD = spider.settings.get('BATCH_THRESHOLD',100)
         
         self.engine = sqlalchemy.create_engine(self.mysql_url,echo=True)
@@ -113,18 +122,18 @@ class MySQLPipeline:
             self.session.commit()
             self.batch_size = 0
             self.staged_items.clear()  # Clear the list since items were successfully committed
+            logging.info("Batch commit sucessful")
         except IntegrityError as e:
             self.session.rollback()
-            logging.debug(f"Batch insert failed: {repr(e)}. Reverting to individual inserts.")
+            logging.warning(f"Batch insert failed: {repr(e)}. Reverting to individual inserts.")
             for singleApartament in self.staged_items:
                 try:
                     self.session.add(singleApartament)
                     self.session.commit()
-                    logging.info("Batch commit sucessful")
                 except IntegrityError as sub_e:
                     self.session.rollback()
                     if "Duplicate entry" in repr(sub_e):
-                        logging.info("Duplicate Entry.")
+                        logging.info("Failed to insert item. Reason: Duplicate Entry.")
                     else:
                         logging.error(f"Failed to insert item: {repr(sub_e)}")
             self.staged_items.clear()  # Clear the list after processing
@@ -138,7 +147,21 @@ from itemadapter import ItemAdapter
 from cassandra import DriverException
 
 class CassandraPipeline:
+    """
+    Pipeline for storing scraped apartment items in a Cassandra database.
+    
+    This pipeline connects to a Cassandra cluster, ensures the required table exists, and then stores the scraped items.
+    """
+
     def __init__(self, host, port, keyspace):
+        """
+        Initializes the Cassandra pipeline.
+        
+        Args:
+            host (str): The host address of the Cassandra cluster.
+            port (int): The port number for connecting to the Cassandra cluster.
+            keyspace (str): The keyspace to use in the Cassandra cluster.
+        """
         self.host = host
         self.port = port
         self.keyspace = keyspace
@@ -165,3 +188,4 @@ class CassandraPipeline:
 
     def close_spider(self, spider):
         self.cluster.shutdown()
+    
