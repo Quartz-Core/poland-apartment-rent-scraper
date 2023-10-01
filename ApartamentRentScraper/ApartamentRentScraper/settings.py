@@ -27,9 +27,10 @@ SELENIUM_DRIVER_NAME = 'undetected'
 # SELENIUM_DRIVER_EXECUTABLE_PATH = Put path to your driver here if DRIVER_NAME not undetected
 SELENIUM_DRIVER_ARGUMENTS= ['--blink-settings=imagesEnabled=false'] 
 # For headless add '--headless'
+# to disable images '--blink-settings=imagesEnabled=false'
   
 DOWNLOADER_MIDDLEWARES = {
-     "ApartamentRentScraper.middlewares.SeleniumMiddleware": 800
+    #  "ApartamentRentScraper.middlewares.SeleniumMiddleware": 800
      }
 
 ITEM_PIPELINES = {
@@ -39,17 +40,29 @@ ITEM_PIPELINES = {
 }
 
 # MySQL settings
-MYSQL_TABLE_NAME = "apartaments"
+
 # MYSQL_URL = "mysql+pymysql://user:password@host:port/dataset"
+MYSQL_URL = "mysql+pymysql://root:mysqlpassword@localhost:3306/apartaments"
 
 # Cassandra settings
 # ================== 
 CASSANDRA_HOST = "localhost"
 CASSANDRA_PORT = 9042
 CASSANDRA_KEYSPACE = "apartaments" 
-
+# ==================
 BATCH_SIZE = 100
 
+# logging
+
+LOG_ENABLED = True
+LOG_LEVEL = 'DEBUG'
+LOG_FILE = 'log.txt'
+LOG_FORMAT = '[%(name)s] %(levelname)s: %(message)s'
+
+
+# JOBDIR = './jobcache'
+
+DUPEFILTER_DEBUG = True
 
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
