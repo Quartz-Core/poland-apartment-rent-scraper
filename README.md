@@ -38,5 +38,5 @@ And give the necessary values to connect your database.
 
 Filters and start_ulr:
 If you want to scrape only specific locations or range prices. Replace url in start_urls with one that has applied filters. (Use the website search filter to get the url)
-The scraper as of now is only able to scrape from mieszkanie or kawalerka listing sections.
+The scraper as it is now can only scrape from mieszkanie or kawalerka listing sections.
  
