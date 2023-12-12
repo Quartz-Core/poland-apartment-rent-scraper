@@ -5,7 +5,7 @@ Scrape and store apartment rental listings from www.otodom.pl into MySQL and Cas
 ## Features
 
 - **Scrapy Spider**: Efficiently scrapes apartment listings.
-- **Dynamic Page Handling**: Uses Selenium to interact with dynamic content.
+- **JavaScript Page Handling**: Uses Selenium to interact with JavaScript content.
 - **Data Processing**: Cleans and processes scraped data for storage.
 - **Optional database loading pipelines:**
   - **MySQL Storage**: Batches and inserts data into a MySQL database.
