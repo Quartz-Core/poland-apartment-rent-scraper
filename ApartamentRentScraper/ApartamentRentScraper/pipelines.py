@@ -33,24 +33,24 @@ class ApartamentScraperPipeline:
         if adreses[1].istitle():
             adapter["city"] = adreses[1]
             adapter["county"] = adreses[1]
-            for i,adres in enumerate(adreses[2:],start=2):
+            for position,adres in enumerate(adreses[2:],start=2):
                 if adres.istitle():
-                    if i == 2:
-                        adapter["district"] = adres
-                    elif i == 3:
+                    if position == 2:
+                        if not re.search(r"\d",adres):
+                            adapter["district"] = adres
+                    elif position == 3:
                         adapter["neighbourhood"] = adres
                 else:
-                    
                     adapter["street"] = adres
 
         else:
             adapter["county"] = adreses[1]
             adapter["city"] = adreses[2]
-            for i,adres in enumerate(adreses[3:],start=3):
+            for position,adres in enumerate(adreses[3:],start=3):
                 if adres.istitle():
-                    if i == 3:
+                    if position == 3:
                         adapter["district"] = adres
-                    elif i == 4:
+                    elif position == 4:
                         adapter["neighbourhood"] = adres
                 else:
                     adapter["street"] = adres
