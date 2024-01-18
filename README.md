@@ -25,7 +25,9 @@ Scrape and store apartment rental listings from www.otodom.pl into MySQL and Cas
 
 **Activating database pipelines:**
 
-Uncomment:
+Define your table schema in schemas.py 
+
+and uncomment:
 ```
 ITEM_PIPELINES = {
     # "ApartamentRentScraper.pipelines.MySQLPipeline" : 301,
