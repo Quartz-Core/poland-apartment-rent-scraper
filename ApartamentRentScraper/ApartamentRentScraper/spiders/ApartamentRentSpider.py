@@ -1,5 +1,4 @@
 from logging import LogRecord
-from logging import LogRecord
 import scrapy
 import logging
 from scrapy.utils.log import configure_logging 
@@ -56,7 +55,6 @@ class ApartamentrentspiderSpider(scrapy.Spider):
             logging.info(f"Detected Last Page: {self.page_limit}")
         
         for apartament in apartaments:
-            time.sleep(1)
             offer_url = apartament.css("a").attrib["href"]
             offer_url = base_ulr + offer_url
 
@@ -65,7 +63,6 @@ class ApartamentrentspiderSpider(scrapy.Spider):
 
         pagenumber = re.search(string=response.url,pattern=r"page=(\d+)")
         pagenumber = int(pagenumber[1])
-        logging.info(f"Page number: {pagenumber}")
         logging.info(f"Page number: {pagenumber}")
         if pagenumber < self.page_limit:
             pagenumber += 1
