@@ -1,6 +1,6 @@
 ## Apartment Rental Scraper
 
-Scrape and store apartment rental listings from www.otodom.pl into MySQL and Cassandra databases.
+Scrape and store apartment rental listings from www.otodom.pl, optionally load the data into MySQL and/or Cassandra databases.
 
 ## Features
 
